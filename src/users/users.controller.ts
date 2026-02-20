@@ -60,4 +60,11 @@ export class UsersController {
   async remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
+
+  @Get('email/:correo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  async findOneByEmail(@Param('correo') correo: string) {
+    return this.usersService.findOneByEmail(correo);
+  }
 }
