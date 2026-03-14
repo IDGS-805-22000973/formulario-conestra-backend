@@ -1,8 +1,9 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Not } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 
 
@@ -57,6 +58,32 @@ export class UsersService {
             where: { id, deletedAt: IsNull() },
             select: ['id', 'nombre', 'correo', 'edad', 'sexo', 'role'] as (keyof User)[],
         });
+    }
+
+
+    // CRUD: Modificar (solo admin)
+    async update(id: number, updateUserDto: UpdateUserDto) {
+        const user = await this.usersRepository.findOne({
+            where: { id, deletedAt: IsNull() },
+        });
+
+        if (!user) throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+
+        // Si se envía correo nuevo, verificar que no esté en uso por otro usuario
+        if (updateUserDto.correo && updateUserDto.correo !== user.correo) {
+            const emailInUse = await this.findOneByEmail(updateUserDto.correo);
+            if (emailInUse) throw new ConflictException('El correo ya está registrado');
+        }
+
+        // Si se envía nueva contraseña, encriptarla
+        if (updateUserDto.password) {
+            const salt = await bcrypt.genSalt(10);
+            updateUserDto.password = await bcrypt.hash(updateUserDto.password, salt);
+        }
+
+        await this.usersRepository.update(id, updateUserDto);
+
+        return this.findOne(id);
     }
 
 
