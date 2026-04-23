@@ -53,8 +53,8 @@ export class TestEngineService {
 
         await this.responseRepo.save(newResponse);
 
-        // 5. Enviar correo de notificación
-        await this.emailService.sendTestSubmissionEmail(user.nombre, testType);
+        // 5. Enviar correo de notificación (fire and forget)
+        this.emailService.sendTestSubmissionEmail(user.nombre, testType);
 
         return {
             message: "Test enviado y calificado con éxito",

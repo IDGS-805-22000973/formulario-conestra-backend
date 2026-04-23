@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
@@ -6,22 +6,47 @@ import { Transporter } from 'nodemailer';
 @Injectable()
 export class EmailService {
   private transporter: Transporter;
+  private readonly logger = new Logger(EmailService.name);
 
   constructor(private configService: ConfigService) {
+    const emailUser = this.configService.get<string>('EMAIL_USER');
+    const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
+
+    this.logger.debug(`Inicializando Email Service con usuario: ${emailUser}`);
+
     // Configurar el transporter de email
     this.transporter = nodemailer.createTransport({
       service: 'gmail', // Usa Gmail como servicio de SMTP
       auth: {
-        user: this.configService.get<string>('EMAIL_USER'), // Tu correo de Gmail
-        pass: this.configService.get<string>('EMAIL_PASSWORD'), // Tu contraseña de aplicación
+        user: emailUser,
+        pass: emailPassword,
       },
+    });
+
+    // Verificar la conexión al iniciar
+    this.transporter.verify((error, success) => {
+      if (error) {
+        this.logger.error('Error al verificar transporter:', error);
+      } else {
+        this.logger.log('Transporter de email listo para enviar mensajes');
+      }
     });
   }
 
   async sendTestSubmissionEmail(
     candidateName: string,
     formType: 'MOSS' | '16PF',
-  ): Promise<boolean> {
+  ): Promise<void> {
+    // Fire and forget - no bloquear la respuesta
+    this.sendEmailAsync(candidateName, formType).catch((error) => {
+      this.logger.error('Error enviando email en background:', error);
+    });
+  }
+
+  private async sendEmailAsync(
+    candidateName: string,
+    formType: 'MOSS' | '16PF',
+  ): Promise<void> {
     try {
       const recipientEmail = 'erika.argaez@conestra.mx';
       const subject = `Nueva respuesta de formulario - ${formType}`;
@@ -32,6 +57,10 @@ export class EmailService {
         <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-MX')}</p>
       `;
 
+      this.logger.debug(
+        `Intentando enviar email a ${recipientEmail} para candidato: ${candidateName}`,
+      );
+
       const info = await this.transporter.sendMail({
         from: this.configService.get<string>('EMAIL_USER'),
         to: recipientEmail,
@@ -39,11 +68,15 @@ export class EmailService {
         html: htmlContent,
       });
 
-      console.log('Correo enviado:', info.response);
-      return true;
+      this.logger.log(
+        `✅ Correo enviado exitosamente a ${recipientEmail}. MessageId: ${info.messageId}`,
+      );
     } catch (error) {
-      console.error('Error al enviar correo:', error);
-      return false;
+      this.logger.error(
+        `❌ Error al enviar correo: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
   }
 }
