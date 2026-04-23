@@ -6,6 +6,7 @@ import { TestResponse } from '../entities/test-response.entity';
 import { User } from '../entities/user.entity';
 import { calculateMoss } from './formulas/moss.logic';
 import { calculate16PF } from './formulas/pf16.logic'; // <--- IMPORTANTE
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class TestEngineService {
@@ -14,6 +15,7 @@ export class TestEngineService {
         private responseRepo: Repository<TestResponse>,
         @InjectRepository(User)
         private userRepo: Repository<User>,
+        private emailService: EmailService,
     ) { }
 
     async processTest(userId: number, testType: 'MOSS' | '16PF', answers: any) {
@@ -50,6 +52,9 @@ export class TestEngineService {
         });
 
         await this.responseRepo.save(newResponse);
+
+        // 5. Enviar correo de notificación
+        await this.emailService.sendTestSubmissionEmail(user.nombre, testType);
 
         return {
             message: "Test enviado y calificado con éxito",

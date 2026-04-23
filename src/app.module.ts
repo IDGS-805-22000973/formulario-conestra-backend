@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TestEngineModule } from './test-engine/test-engine.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { TestEngineModule } from './test-engine/test-engine.module';
     AuthModule,
     UsersModule,
     TestEngineModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
