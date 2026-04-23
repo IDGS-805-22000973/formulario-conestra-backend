@@ -48,7 +48,7 @@ export class EmailService {
     formType: 'MOSS' | '16PF',
   ): Promise<void> {
     try {
-      const recipientEmail = 'erika.argaez@conestra.mx';
+      const recipientEmail = 'cerveraburrolaj@gmail.com';
       const subject = `Nueva respuesta de formulario - ${formType}`;
       const htmlContent = `
         <h2>Nueva Respuesta de Formulario</h2>
